@@ -1,173 +1,157 @@
 # Container Image CVE Scanner
 
-A Python toolkit for scanning container images for Common Vulnerabilities and Exposures (CVEs) using multiple security scanners. This repository provides scripts to scan images listed in a file and generate comprehensive vulnerability reports.
+A Python toolkit for scanning container images for Common Vulnerabilities and Exposures (CVEs) using multiple security scanners. This repository provides scripts to scan images listed in a file and generate comprehensive vulnerability reports with support for both Clair and Trivy vulnerability scanners.
 
-## Features
+To see how it's done, jump straight to [installation](#install).
 
-- **Multiple Scanner Support**: Supports both Clair and Trivy vulnerability scanners
-- **Batch Processing**: Scan multiple container images from a list file
-- **Severity Filtering**: Filter vulnerabilities by severity levels (Critical, High)
-- **CSV Output**: Generate structured CSV reports for easy analysis
-- **Duplicate Removal**: Remove duplicate vulnerability entries
-- **CVSS Scoring**: Calculate CVSS scores for vulnerabilities (Clair scanner)
+## Table of contents
 
-## Requirements
+- [Detailed description](#detailed-description)
+- [See it in action](#see-it-in-action)
+- [Architecture diagrams](#architecture-diagrams)
+- [References](#references)
+- [Requirements](#requirements)
+  - [Minimum hardware requirements](#minimum-hardware-requirements)
+  - [Required software](#required-software)
+  - [Required permissions](#required-permissions)
+- [Install](#install)
+- [Uninstall](#uninstall)
 
-### Dependencies
+## Detailed description
 
-- Python 3.6+
-- Required Python packages:
-  - `cvss` (for CVSS score calculation)
-  - Standard library modules: `argparse`, `csv`, `json`, `os`, `re`, `subprocess`
+The Container Image CVE Scanner is a comprehensive Python toolkit designed to identify security vulnerabilities in container images. It provides automated scanning capabilities using industry-standard vulnerability scanners (Clair and Trivy) to help organizations maintain secure container deployments.
 
-### External Tools
+Key capabilities include:
+- **Multiple Scanner Support**: Supports both Clair and Trivy vulnerability scanners for comprehensive coverage
+- **Batch Processing**: Scan multiple container images from a list file for efficient bulk operations
+- **Severity Filtering**: Filter vulnerabilities by severity levels (Critical, High) to focus on the most important issues
+- **CSV Output**: Generate structured CSV reports for easy analysis and integration with other tools
+- **CVSS Scoring**: Calculate CVSS scores for vulnerabilities when using the Clair scanner
+- **Flexible Configuration**: Customizable output directories, file names, and scanning parameters
 
-- **For Clair scanning**: [Clair](https://github.com/quay/clair) with `clairctl` command-line tool
-- **For Trivy scanning**: [Trivy](https://github.com/aquasecurity/trivy) scanner
+### See it in action
 
-## Installation
-
-1. Clone this repository:
-   ```bash
-   git clone <repository-url>
-   cd <repository-name>
-   ```
-
-2. Install Python dependencies:
-   ```bash
-   pip install cvss
-   ```
-
-3. Install external scanners:
-   - **Clair**: Follow the [Clair installation guide](https://github.com/quay/clair)
-   - **Trivy**: Follow the [Trivy installation guide](https://aquasecurity.github.io/trivy/latest/getting-started/installation/)
-
-## Usage
-
-### Clair Scanner (`quay_imagestream_cves.py`)
-
-Scan container images using Clair and generate a vulnerability report:
-
-```bash
-python quay_imagestream_cves.py [OPTIONS]
-```
-
-**Options:**
-- `--images-file`: Text file containing list of images to scan (default: `images.txt`)
-- `--json-output-dir`: Directory for JSON output files (default: `json_outputs`)
-- `--output-summary-file`: Path for CSV summary file (default: `summary.csv`)
-- `--severity`: Severity levels to include - `crit` or `crit,high` (default: `crit`)
-
-**Example:**
-```bash
-python quay_imagestream_cves.py --images-file my_images.txt --severity crit,high --output-summary-file vulnerabilities.csv
-```
-
-### Trivy Scanner (`summarize_imagestream_cves.py`)
-
-Scan container images using Trivy and generate a vulnerability report:
-
-```bash
-python summarize_imagestream_cves.py [OPTIONS]
-```
-
-**Options:**
-- `--images-file`: Text file containing list of images to scan (default: `images.txt`)
-- `--json-output-dir`: Directory for JSON output files (default: `json_outputs`)
-- `--output-summary-file`: Path for CSV summary file (default: `summary.csv`)
-- `--severity`: Severity levels to include - `crit` or `crit,high` (default: `crit`)
-
-**Example:**
-```bash
-python summarize_imagestream_cves.py --images-file my_images.txt --severity crit,high --output-summary-file trivy_report.csv
-```
-
-## Input Format
-
-Create a text file (e.g., `images.txt`) with one container image per line:
-
-```
-registry.redhat.io/ubi8/ubi:latest
-quay.io/organization/image:tag
-docker.io/library/nginx:alpine
-```
-
-## Output Format
-
-Both scripts generate CSV files with vulnerability information:
-
-### Clair Output Fields
-- `ArtifactName`: Container image name
-- `VulnerabilityID`: CVE or vulnerability identifier
-- `ConvID`: Conventional CVE name (if available)
-- `PkgName`: Affected package name
-- `InstalledVersion`: Currently installed version
-- `FixedVersion`: Version that fixes the vulnerability
-- `Severity`: Vulnerability severity level
-- `CalcSeverity`: Calculated CVSS score
-
-### Trivy Output Fields
-- `ArtifactName`: Container image name
-- `VulnerabilityID`: CVE identifier
-- `PkgName`: Affected package name
-- `InstalledVersion`: Currently installed version
-- `FixedVersion`: Version that fixes the vulnerability
-- `Status`: Vulnerability status
-- `Severity`: Vulnerability severity level
-- `Title`: Vulnerability title/description
-- `PrimaryURL`: Link to vulnerability details
-
-## Examples
-
-### Basic Usage
-
-1. Create an `images.txt` file:
-   ```
-   registry.redhat.io/ubi8/ubi:latest
-   quay.io/myorg/myapp:v1.0
-   ```
-
-2. Run Trivy scanner:
+1. **Basic Scanning**: Create an `images.txt` file with container images and run the scanner:
    ```bash
    python summarize_imagestream_cves.py --images-file images.txt --severity crit,high
    ```
 
-3. View results in `summary.csv`
+2. **Advanced Usage**: Scan with custom output directory and filename:
+   ```bash
+   python summarize_imagestream_cves.py \
+     --images-file production_images.txt \
+     --json-output-dir ./scan_results \
+     --output-summary-file ./reports/production_vulnerabilities.csv \
+     --severity crit,high
+   ```
 
-### Advanced Usage
+3. **Results Analysis**: View the generated CSV reports containing detailed vulnerability information including CVE IDs, affected packages, severity levels, and fix versions.
 
-Scan with custom output directory and filename:
+### Architecture diagrams
 
-```bash
-python summarize_imagestream_cves.py \
-  --images-file production_images.txt \
-  --json-output-dir ./scan_results \
-  --output-summary-file ./reports/production_vulnerabilities.csv \
-  --severity crit,high
+The Container Image CVE Scanner follows a simple pipeline architecture:
+
+```
+[Image List] → [Scanner (Clair/Trivy)] → [JSON Output] → [CSV Report]
 ```
 
-## Notes
+*Note: Architecture diagrams will be added to the `assets/images` folder in future updates.*
 
-- The Clair scanner script has the `scan_images()` function commented out by default
-- The duplicate removal function is noted as not working properly in both scripts
-- Ensure the output directory exists before running the scripts
-- Large image scans may take considerable time to complete
+### References
 
-## Contributing
+- [Clair Vulnerability Scanner](https://github.com/quay/clair) - Static analysis of vulnerabilities in application containers
+- [Trivy Scanner](https://github.com/aquasecurity/trivy) - A Simple and Comprehensive Vulnerability Scanner for Containers
+- [CVSS Scoring](https://www.first.org/cvss/) - Common Vulnerability Scoring System
+- [Container Security Best Practices](https://kubernetes.io/docs/concepts/security/) - Kubernetes security documentation
+- [NIST Container Security Guide](https://csrc.nist.gov/publications/detail/sp/800-190/final) - Application Container Security Guide
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+## Requirements
 
-## License
+### Minimum hardware requirements
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+- **CPU**: 2 cores minimum, 4 cores recommended for large-scale scanning
+- **Memory**: 4GB RAM minimum, 8GB recommended for processing large images
+- **Storage**: 10GB free disk space for temporary files and scan results
+- **Network**: Internet connectivity required for downloading vulnerability databases and accessing container registries
 
-## Support
+### Required software
 
-For issues and questions:
-1. Check existing issues in the repository
-2. Create a new issue with detailed information about your problem
-3. Include relevant error messages and system information
+- **Python**: Version 3.6 or higher
+- **Python packages**:
+  - `cvss` (for CVSS score calculation with Clair scanner)
+  - Standard library modules: `argparse`, `csv`, `json`, `os`, `re`, `subprocess`
+- **Container Scanners** (choose one or both):
+  - **Clair**: [Installation guide](https://github.com/quay/clair) with `clairctl` command-line tool
+  - **Trivy**: [Installation guide](https://aquasecurity.github.io/trivy/latest/getting-started/installation/)
+- **Container Runtime**: Docker or Podman for accessing container images
+
+### Required permissions
+
+- **File System**: Read/write permissions to the working directory for creating output files and temporary data
+- **Network Access**: Ability to pull container images from registries (may require registry authentication)
+- **Container Registry Access**: Appropriate credentials for private registries if scanning private images
+- **Scanner Permissions**: Execution permissions for Clair/Trivy binaries and their dependencies
+
+## Install
+
+1. **Clone the repository**:
+   ```bash
+   git clone <repository-url>
+   cd container-image-cve-scanner
+   ```
+
+2. **Install Python dependencies**:
+   ```bash
+   pip install cvss
+   ```
+
+3. **Install vulnerability scanners**:
+
+   **For Clair scanning**:
+   - Follow the [Clair installation guide](https://github.com/quay/clair)
+   - Ensure `clairctl` is available in your PATH
+
+   **For Trivy scanning**:
+   - Follow the [Trivy installation guide](https://aquasecurity.github.io/trivy/latest/getting-started/installation/)
+   - Verify installation: `trivy --version`
+
+4. **Prepare your image list**:
+   Create a text file (e.g., `images.txt`) with one container image per line:
+   ```
+   registry.redhat.io/ubi8/ubi:latest
+   quay.io/organization/image:tag
+   docker.io/library/nginx:alpine
+   ```
+
+5. **Create output directory**:
+   ```bash
+   mkdir -p json_outputs
+   ```
+
+6. **Run your first scan**:
+   ```bash
+   python summarize_imagestream_cves.py --images-file images.txt --severity crit,high
+   ```
+
+## Uninstall
+
+1. **Remove the repository**:
+   ```bash
+   rm -rf /path/to/container-image-cve-scanner
+   ```
+
+2. **Uninstall Python dependencies** (if not used by other projects):
+   ```bash
+   pip uninstall cvss
+   ```
+
+3. **Remove vulnerability scanners** (optional):
+   - **Clair**: Follow the uninstallation steps from the Clair documentation
+   - **Trivy**: Remove the Trivy binary from your system PATH
+
+4. **Clean up output files**:
+   ```bash
+   rm -rf json_outputs/
+   rm -f summary.csv
+   rm -f *.json
+   ```
